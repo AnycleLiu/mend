@@ -352,6 +352,15 @@ function unifiedEdits(lines: string[], strict: boolean): Edit[] {
     }
     if (l.startsWith('@@')) {
       if (sec === null) throw new Exit2(`error: parse ${i + 1}`);
+      if (sec.delFile || (sec.hasPair && sec.pairNew === null)) {
+        // A deletion section (SPEC.md section 6): its hunks are not read, so
+        // their lines are skipped unexamined up to the next section.
+        let j = i + 1;
+        while (j < lines.length && !lines[j]!.startsWith('diff --git ') && !pairAt(j)) j += 1;
+        inHeader = false;
+        i = j;
+        continue;
+      }
       const m = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/.exec(l);
       if (m === null) throw new Exit2(`error: parse ${i + 1}`);
       const hunk: UHunk = { a: Number(m[1]), body: [] };
